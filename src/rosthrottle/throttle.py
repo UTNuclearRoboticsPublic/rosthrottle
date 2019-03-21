@@ -1,6 +1,7 @@
 import subprocess 
 import time
 import signal
+import os
 from abc import ABCMeta, abstractmethod
 
 COMMAND_BASE = ['rosrun', 'topic_tools', 'throttle']
@@ -9,9 +10,9 @@ class AbstractThrottle(object):
     '''Represents an abstract throttler. Should not be used externally.
 
     Attributes:
-        intopic: topic to be throttled
-        outtopic: topic to publish throttled output to
-        process: topic_tools throttling process (if running)
+        intopic (str): topic to be throttled
+        outtopic (str): topic to publish throttled output to
+        process (Popen): topic_tools throttling process if running, otherwise None
     '''
     __metaclass__ = ABCMeta
 
@@ -33,8 +34,23 @@ class AbstractThrottle(object):
             return return_code
         return None
     
+    def update(self, **kwargs):
+        '''Provides an instantaneous way of updating a running throttler.
+        Can be used instead of calling stop(), updating fields, then calling start() again
+        All Throttle objects must implement this.
+        '''
+        if self.process is not None:
+            self.stop()
+            for field in kwargs.keys():
+                setattr(self, field, kwargs[field])
+            return self.start()
+        return None
+    
     @abstractmethod
     def start(self):
+        '''Starts the throttler.
+        All Throttle objects must implement this.
+        '''
         pass
     
     @property
@@ -78,14 +94,14 @@ class MessageThrottle(AbstractThrottle):
         self._rate = rate
         
     def start(self):
-        '''Starts the throttler.
+        '''Starts the throttler process.
 
         Returns:
             int: process PID, or None if throttler is already running
         '''
         if self.process is None:
             command = COMMAND_BASE + ['messages', self.intopic, str(self.rate), self.outtopic]
-            self.process = subprocess.Popen(command)
+            self.process = subprocess.Popen(command, stdout=open(os.devnull, 'wb'))
             return self.process.pid
         return None
         
@@ -124,7 +140,7 @@ class BandwidthThrottle(AbstractThrottle):
         '''
         if self.process is None:
             command = COMMAND_BASE + ['bytes', self.intopic, str(self.bandwidth), str(self.window), self.outtopic]
-            self.process = subprocess.Popen(command)
+            self.process = subprocess.Popen(command, stdout=open(os.devnull, 'wb'))
             return self.process.pid
         return None
         
