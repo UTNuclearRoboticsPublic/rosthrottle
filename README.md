@@ -1,4 +1,4 @@
-# rosthrottler
+# rosthrottle
 ROS Python package for throttling ROS nodes programatically in Python. Sits on top of [ros_comm](http://wiki.ros.org/ros_comm)
 [topic_tools](http://wiki.ros.org/topic_tools) [throttle](http://wiki.ros.org/topic_tools/throttle) utility.
 
