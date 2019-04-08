@@ -37,7 +37,6 @@ class AbstractThrottle(object):
     def update(self, **kwargs):
         '''Provides an instantaneous way of updating a running throttler.
         Can be used instead of calling stop(), updating fields, then calling start() again
-        All Throttle objects must implement this.
         '''
         if self.process is not None:
             self.stop()
