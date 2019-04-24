@@ -2,31 +2,33 @@ import subprocess
 import time
 import signal
 import os
+import atexit
 from abc import ABCMeta, abstractmethod
 
 COMMAND_BASE = ['rosrun', 'topic_tools', 'throttle']
     
 class AbstractThrottle(object):
-    '''Represents an abstract throttler. Should not be used externally.
+    """Represents an abstract throttler. Should not be used externally.
 
     Attributes:
         intopic (str): topic to be throttled
         outtopic (str): topic to publish throttled output to
         process (Popen): topic_tools throttling process if running, otherwise None
-    '''
+    """
     __metaclass__ = ABCMeta
 
     def __init__(self, intopic, outtopic):
         self._intopic = intopic
         self._outtopic = outtopic
         self._process = None
+        atexit.register(self._cleanup)
 
     def stop(self):
-        '''Stops the running throttler.
+        """Stops the running throttler.
 
         Returns:
             int: process return code, or None if there is no runnning throttler
-        '''
+        """
         if self.process is not None:
             self.process.send_signal(signal.SIGINT)
             return_code = self.process.wait()
@@ -35,9 +37,9 @@ class AbstractThrottle(object):
         return None
     
     def update(self, **kwargs):
-        '''Provides an instantaneous way of updating a running throttler.
+        """Provides an instantaneous way of updating a running throttler.
         Can be used instead of calling stop(), updating fields, then calling start() again
-        '''
+        """
         if self.process is not None:
             self.stop()
             for field in kwargs.keys():
@@ -47,10 +49,16 @@ class AbstractThrottle(object):
     
     @abstractmethod
     def start(self):
-        '''Starts the throttler.
+        """Starts the throttler.
         All Throttle objects must implement this.
-        '''
+        """
         pass
+        
+    def _cleanup(self):
+        """Cleans up the throttling process on exit.
+        This function is registered with atexit on throttle creation.
+        """
+        self.stop()
     
     @property
     def intopic(self):
@@ -77,7 +85,7 @@ class AbstractThrottle(object):
         self._process = p
         
 class MessageThrottle(AbstractThrottle):
-    '''Represents a message throttler.
+    """Represents a message throttler.
     
     Args:
         intopic: string name of topic to throttle
@@ -86,18 +94,18 @@ class MessageThrottle(AbstractThrottle):
 
     Attributes:
         rate: desired rate of messages (Hz) on outtopic
-    '''
+    """
 
     def __init__(self, intopic, outtopic, rate):
         super(MessageThrottle, self).__init__(intopic, outtopic)
         self._rate = rate
         
     def start(self):
-        '''Starts the throttler process.
+        """Starts the throttler process.
 
         Returns:
             int: process PID, or None if throttler is already running
-        '''
+        """
         if self.process is None:
             command = COMMAND_BASE + ['messages', self.intopic, str(self.rate), self.outtopic]
             self.process = subprocess.Popen(command, stdout=open(os.devnull, 'wb'))
@@ -113,7 +121,7 @@ class MessageThrottle(AbstractThrottle):
         self._rate = r
     
 class BandwidthThrottle(AbstractThrottle):
-    '''Represents a bandwidth throttler.
+    """Represents a bandwidth throttler.
     
     Args:
         intopic: string name of topic to throttle
@@ -124,7 +132,7 @@ class BandwidthThrottle(AbstractThrottle):
     Attributes:
         bandwidth: desired throughput in bytes per second on outtopic
         window: throughput averaging window
-    '''
+    """
 
     def __init__(self, intopic, outtopic, bandwidth, window):
         super(BandwidthThrottle, self).__init__(intopic, outtopic)
@@ -132,11 +140,11 @@ class BandwidthThrottle(AbstractThrottle):
         self._window = window
     
     def start(self):
-        '''Starts the throttler.
+        """Starts the throttler.
 
         Returns:
             int: process PID, or None if throttler is already running
-        '''
+        """
         if self.process is None:
             command = COMMAND_BASE + ['bytes', self.intopic, str(self.bandwidth), str(self.window), self.outtopic]
             self.process = subprocess.Popen(command, stdout=open(os.devnull, 'wb'))
