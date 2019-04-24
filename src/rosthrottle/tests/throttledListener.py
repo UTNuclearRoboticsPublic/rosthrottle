@@ -7,7 +7,8 @@ def callback(data):
 def listener():
     rospy.init_node('throttled_listener')
 
-    rospy.Subscriber('chatter_throttle', String, callback)
+    rospy.Subscriber('chatter_message_throttled', String, callback)
+    rospy.Subscriber('chatter_bandwidth_throttled', String, callback)
 
     rospy.spin()
 
