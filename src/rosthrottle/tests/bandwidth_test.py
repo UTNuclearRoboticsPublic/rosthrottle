@@ -12,6 +12,3 @@ if __name__=='__main__':
     t.update(bandwidth=100)
     time.sleep(10)
     t.stop()
-    # while True:
-    #     print('testing')
-    #     time.sleep(1)
