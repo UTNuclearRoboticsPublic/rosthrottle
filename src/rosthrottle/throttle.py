@@ -1,5 +1,4 @@
 import subprocess 
-import time
 import signal
 import os
 import atexit
@@ -25,6 +24,8 @@ class AbstractThrottle(object):
 
     def stop(self):
         """Stops the running throttler.
+        
+        Note that this function does nothing if the throttle is not running.
 
         Returns:
             int: process return code, or None if there is no runnning throttler
@@ -37,8 +38,13 @@ class AbstractThrottle(object):
         return None
     
     def update(self, **kwargs):
-        """Provides an instantaneous way of updating a running throttler.
-        Can be used instead of calling stop(), updating fields, then calling start() again
+        """Provides a simple way of updating a running throttler. Can be 
+        used instead of calling stop(), updating fields, then calling start() again. 
+
+        Note that this function does nothing if the throttle is not running.
+        
+        Returns:
+            int: process ID, or None if there is no process to update
         """
         if self.process is not None:
             self.stop()
@@ -50,12 +56,18 @@ class AbstractThrottle(object):
     @abstractmethod
     def start(self):
         """Starts the throttler.
-        All Throttle objects must implement this.
+
+        Note that this function should do nothing if the throttle is 
+        already running.
+        
+        Returns:
+            int: process ID of the throttling node. 
         """
         pass
         
     def _cleanup(self):
         """Cleans up the throttling process on exit.
+        
         This function is registered with atexit on throttle creation.
         """
         self.stop()
@@ -101,7 +113,7 @@ class MessageThrottle(AbstractThrottle):
         self._rate = rate
         
     def start(self):
-        """Starts the throttler process.
+        """Starts the throttler.
 
         Returns:
             int: process PID, or None if throttler is already running
@@ -141,7 +153,7 @@ class BandwidthThrottle(AbstractThrottle):
     
     def start(self):
         """Starts the throttler.
-
+        
         Returns:
             int: process PID, or None if throttler is already running
         """

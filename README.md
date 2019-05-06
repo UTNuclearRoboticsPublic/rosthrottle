@@ -39,3 +39,5 @@ bt.update(bandwidth=100)
 # kill throttler
 bt.stop()
 ```
+
+See `src/rosthrottle/tests/` for additional examples and documentation.
